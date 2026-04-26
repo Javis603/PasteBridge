@@ -226,7 +226,7 @@ Windows client 必須能連到 Mac server。
 
 ## 自動啟動
 
-兩台機器都由 PM2 管理 PasteBridge process。macOS 使用 PM2 的 startup hook，Windows 則使用內建工作排程器在登入時恢復已儲存的 PM2 process list。
+macOS server 使用 PM2 的 startup hook。Windows client 使用內建工作排程器在登入時直接啟動。
 
 ### macOS
 
@@ -246,14 +246,12 @@ pm2 startup
 
 ```powershell
 cd PasteBridge
-npm install -g pm2
-pm2 start client.js --name pastebridge-client
-pm2 save
 
-$pm2 = (Get-Command pm2.cmd).Source
-$action = New-ScheduledTaskAction -Execute $pm2 -Argument 'resurrect'
+$projectDir = (Get-Location).Path
+$node = (Get-Command node.exe).Source
+$action = New-ScheduledTaskAction -Execute $node -Argument 'client.js' -WorkingDirectory $projectDir
 $trigger = New-ScheduledTaskTrigger -AtLogOn
-Register-ScheduledTask -TaskName 'PasteBridge Client' -Action $action -Trigger $trigger -Description 'Start PasteBridge client through PM2 on logon' -Force
+Register-ScheduledTask -TaskName 'PasteBridge Client' -Action $action -Trigger $trigger -Description 'Start PasteBridge client on logon' -Force
 ```
 
 ---

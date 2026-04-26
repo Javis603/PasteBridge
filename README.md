@@ -226,9 +226,8 @@ The Windows client must be able to connect to the Mac server.
 
 ## Auto Start
 
-PM2 manages the PasteBridge processes on both machines. macOS uses PM2's
-startup hook, while Windows uses Task Scheduler to restore the saved PM2 process
-list at login.
+macOS uses PM2's startup hook for the server. Windows uses Task Scheduler to
+start the client directly at login.
 
 ### macOS
 
@@ -248,14 +247,12 @@ Run these in PowerShell:
 
 ```powershell
 cd PasteBridge
-npm install -g pm2
-pm2 start client.js --name pastebridge-client
-pm2 save
 
-$pm2 = (Get-Command pm2.cmd).Source
-$action = New-ScheduledTaskAction -Execute $pm2 -Argument 'resurrect'
+$projectDir = (Get-Location).Path
+$node = (Get-Command node.exe).Source
+$action = New-ScheduledTaskAction -Execute $node -Argument 'client.js' -WorkingDirectory $projectDir
 $trigger = New-ScheduledTaskTrigger -AtLogOn
-Register-ScheduledTask -TaskName 'PasteBridge Client' -Action $action -Trigger $trigger -Description 'Start PasteBridge client through PM2 on logon' -Force
+Register-ScheduledTask -TaskName 'PasteBridge Client' -Action $action -Trigger $trigger -Description 'Start PasteBridge client on logon' -Force
 ```
 
 ---
