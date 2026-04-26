@@ -1,0 +1,36 @@
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.server.example
+!.env.client.example
+
+# Dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Runtime / temporary files
+pastebridge_send.png
+pastebridge_recv.png
+*.tmp
+*.temp
+
+# Local TLS certificates / private keys
+*.pem
+*.key
+*.crt
+*.p12

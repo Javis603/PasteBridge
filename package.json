@@ -1,0 +1,29 @@
+{
+  "name": "pastebridge",
+  "version": "1.0.0",
+  "description": "Self-hosted clipboard relay for macOS, Windows, and Apple Universal Clipboard workflows",
+  "license": "MIT",
+  "author": "Javis",
+  "keywords": [
+    "clipboard",
+    "sync",
+    "macos",
+    "windows",
+    "iphone",
+    "universal-clipboard",
+    "websocket"
+  ],
+  "scripts": {
+    "server": "node server.js",
+    "client": "node client.js",
+    "test": "node test/run.js"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "dependencies": {
+    "clipboardy": "^2.3.0",
+    "dotenv": "^17.3.1",
+    "ws": "^8.20.0"
+  }
+}
