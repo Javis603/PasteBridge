@@ -58,47 +58,54 @@ Mac 會作為橋接端，Windows 會連到 Mac server。
 
 ## 快速開始
 
-1. 在兩台機器安裝依賴：
+1. 在兩台機器 clone repository：
+
+```bash
+git clone https://github.com/Javis603/PasteBridge
+cd PasteBridge
+```
+
+2. 安裝依賴：
 
 ```bash
 npm install
 ```
 
-2. 在 Mac 安裝 `pngpaste`：
+3. 在 Mac 安裝 `pngpaste`：
 
 ```bash
 brew install pngpaste
 ```
 
-3. 建立 Mac 的 `.env`：
+4. 建立 Mac 的 `.env`：
 
 ```bash
 cp .env.server.example .env
 ```
 
-4. 建立 Windows 的 `.env`：
+5. 建立 Windows 的 `.env`：
 
 ```powershell
 copy .env.client.example .env
 ```
 
-5. 在兩台機器設定相同的 `AUTH_TOKEN`。
+6. 在兩台機器設定相同的 `AUTH_TOKEN`。
 
-6. 在 Windows 的 `.env` 把 `SERVER_IP` 設成 Mac 可連到的 IP，建議使用 ZeroTier、Tailscale 或同一個 LAN。
+7. 在 Windows 的 `.env` 把 `SERVER_IP` 設成 Mac 可連到的 IP，建議使用 ZeroTier、Tailscale 或同一個 LAN。
 
-7. 啟動 Mac server：
+8. 啟動 Mac server：
 
 ```bash
 npm run server
 ```
 
-8. 啟動 Windows client：
+9. 啟動 Windows client：
 
 ```bash
 npm run client
 ```
 
-9. 在其中一台機器複製文字或圖片，然後在另一台機器貼上。
+10. 在其中一台機器複製文字或圖片，然後在另一台機器貼上。
 
 ---
 
@@ -219,9 +226,12 @@ Windows client 必須能連到 Mac server。
 
 ## 自動啟動
 
+兩台機器都由 PM2 管理 PasteBridge process。macOS 使用 PM2 的 startup hook，Windows 則使用內建工作排程器在登入時恢復已儲存的 PM2 process list。
+
 ### macOS
 
 ```bash
+cd PasteBridge
 npm install -g pm2
 pm2 start server.js --name pastebridge-server
 pm2 save
@@ -232,11 +242,18 @@ pm2 startup
 
 ### Windows
 
+在 PowerShell 執行：
+
 ```powershell
-npm install -g pm2 pm2-windows-startup
-pm2-windows-startup install
+cd PasteBridge
+npm install -g pm2
 pm2 start client.js --name pastebridge-client
 pm2 save
+
+$pm2 = (Get-Command pm2.cmd).Source
+$action = New-ScheduledTaskAction -Execute $pm2 -Argument 'resurrect'
+$trigger = New-ScheduledTaskTrigger -AtLogOn
+Register-ScheduledTask -TaskName 'PasteBridge Client' -Action $action -Trigger $trigger -Description 'Start PasteBridge client through PM2 on logon' -Force
 ```
 
 ---

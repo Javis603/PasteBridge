@@ -58,47 +58,54 @@ The Mac acts as the bridge. Windows connects to it as a client.
 
 ## Quick Start
 
-1. Install dependencies on both machines:
+1. Clone the repository on both machines:
+
+```bash
+git clone https://github.com/Javis603/PasteBridge
+cd PasteBridge
+```
+
+2. Install dependencies:
 
 ```bash
 npm install
 ```
 
-2. Install `pngpaste` on the Mac:
+3. Install `pngpaste` on the Mac:
 
 ```bash
 brew install pngpaste
 ```
 
-3. Create the Mac `.env`:
+4. Create the Mac `.env`:
 
 ```bash
 cp .env.server.example .env
 ```
 
-4. Create the Windows `.env`:
+5. Create the Windows `.env`:
 
 ```powershell
 copy .env.client.example .env
 ```
 
-5. Set the same `AUTH_TOKEN` on both machines.
+6. Set the same `AUTH_TOKEN` on both machines.
 
-6. Set `SERVER_IP` on Windows to your Mac's reachable IP address, preferably through ZeroTier, Tailscale, or your LAN.
+7. Set `SERVER_IP` on Windows to your Mac's reachable IP address, preferably through ZeroTier, Tailscale, or your LAN.
 
-7. Start the Mac server:
+8. Start the Mac server:
 
 ```bash
 npm run server
 ```
 
-8. Start the Windows client:
+9. Start the Windows client:
 
 ```bash
 npm run client
 ```
 
-9. Copy text or an image on one machine and paste on the other.
+10. Copy text or an image on one machine and paste on the other.
 
 ---
 
@@ -219,9 +226,14 @@ The Windows client must be able to connect to the Mac server.
 
 ## Auto Start
 
+PM2 manages the PasteBridge processes on both machines. macOS uses PM2's
+startup hook, while Windows uses Task Scheduler to restore the saved PM2 process
+list at login.
+
 ### macOS
 
 ```bash
+cd PasteBridge
 npm install -g pm2
 pm2 start server.js --name pastebridge-server
 pm2 save
@@ -232,11 +244,18 @@ Run the command printed by `pm2 startup`.
 
 ### Windows
 
+Run these in PowerShell:
+
 ```powershell
-npm install -g pm2 pm2-windows-startup
-pm2-windows-startup install
+cd PasteBridge
+npm install -g pm2
 pm2 start client.js --name pastebridge-client
 pm2 save
+
+$pm2 = (Get-Command pm2.cmd).Source
+$action = New-ScheduledTaskAction -Execute $pm2 -Argument 'resurrect'
+$trigger = New-ScheduledTaskTrigger -AtLogOn
+Register-ScheduledTask -TaskName 'PasteBridge Client' -Action $action -Trigger $trigger -Description 'Start PasteBridge client through PM2 on logon' -Force
 ```
 
 ---
