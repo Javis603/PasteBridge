@@ -25,6 +25,14 @@ module.exports.tests = [
         }
     },
     {
+        name: 'loadServerConfig defaults to one second clipboard polling',
+        run() {
+            const config = loadServerConfig({});
+
+            assert.strictEqual(config.pollIntervalMs, 1000);
+        }
+    },
+    {
         name: 'loadServerConfig requires TLS cert and key together',
         run() {
             assert.throws(() => {

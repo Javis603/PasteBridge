@@ -81,7 +81,7 @@ function loadServerConfig(source = process.env) {
         tlsKeyPath,
         tempSendPath: source.TEMP_SEND_PATH || '/tmp/pastebridge_send.png',
         tempRecvPath: source.TEMP_RECV_PATH || '/tmp/pastebridge_recv.png',
-        pollIntervalMs: parsePositiveInt('POLL_INTERVAL_MS', 2000, source),
+        pollIntervalMs: parsePositiveInt('POLL_INTERVAL_MS', 1000, source),
         suppressMs: parsePositiveInt('SUPPRESS_MS', 5000, source),
         maxTextBytes: parseByteSize('MAX_TEXT_BYTES', 4 * 1024 * 1024, source),
         maxImageBytes: parseByteSize('MAX_IMAGE_BYTES', 25 * 1024 * 1024, source),
