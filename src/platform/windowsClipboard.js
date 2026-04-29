@@ -9,6 +9,7 @@ const { byteLength, createClipboardState } = require('../common/protocol');
 const execFileAsync = promisify(execFile);
 const fsPromises = fs.promises;
 const CLIPBOARD_RETRY_DELAYS_MS = [40, 120, 250];
+const RECOVERABLE_CLIPBOARD_WARNING_INTERVAL_MS = 60 * 1000;
 
 function createWindowsClipboard(options) {
     const {
@@ -18,6 +19,7 @@ function createWindowsClipboard(options) {
         maxImageBytes,
         logger = console
     } = options;
+    let lastRecoverableTextReadWarningAt = 0;
 
     async function runPowerShell(script, maxBuffer = maxTextBytes + maxImageBytes) {
         const { stdout } = await execFileAsync('powershell', ['-NoProfile', '-Command', script], {
@@ -60,6 +62,16 @@ function createWindowsClipboard(options) {
         );
     }
 
+    function warnRecoverableTextRead(message, err) {
+        const now = Date.now();
+        if (now - lastRecoverableTextReadWarningAt < RECOVERABLE_CLIPBOARD_WARNING_INTERVAL_MS) {
+            return;
+        }
+
+        lastRecoverableTextReadWarningAt = now;
+        logger.warn(message, compactErrorMessage(err));
+    }
+
     async function withClipboardRetries(operation) {
         let lastError = null;
 
@@ -96,7 +108,7 @@ if ([System.Windows.Forms.Clipboard]::ContainsText()) {
             };
         } catch (err) {
             if (isRecoverableClipboardReadError(err)) {
-                logger.warn('PowerShell clipboard text read unavailable after retries:', compactErrorMessage(err));
+                warnRecoverableTextRead('PowerShell clipboard text read unavailable after retries:', err);
             } else {
                 logger.error('PowerShell clipboard text read failed:', compactErrorMessage(err));
             }
@@ -114,13 +126,15 @@ if ([System.Windows.Forms.Clipboard]::ContainsText()) {
                 data: await withClipboardRetries(() => clipboardy.read())
             };
         } catch (err) {
-            if (isRecoverableClipboardReadError(err)) {
-                logger.warn('clipboardy text read unavailable after retries, trying PowerShell fallback:', compactErrorMessage(err));
-            } else {
-                logger.error('clipboardy text read failed, trying PowerShell fallback:', compactErrorMessage(err));
-            }
-
             textResult = await readTextWithPowerShell();
+
+            if (!textResult.ok) {
+                if (isRecoverableClipboardReadError(err)) {
+                    warnRecoverableTextRead('clipboardy text read unavailable and PowerShell fallback did not recover:', err);
+                } else {
+                    logger.error('clipboardy text read failed and PowerShell fallback did not recover:', compactErrorMessage(err));
+                }
+            }
         }
 
         if (!textResult.ok) {
