@@ -4,7 +4,7 @@ const { promisify } = require('util');
 
 const clipboardy = require('clipboardy');
 
-const { byteLength, createClipboardState } = require('../common/protocol');
+const { byteLength, createClipboardState, sanitizeText } = require('../common/protocol');
 
 const execFileAsync = promisify(execFile);
 const fsPromises = fs.promises;
@@ -141,12 +141,16 @@ if ([System.Windows.Forms.Clipboard]::ContainsText()) {
             return { ok: false, data: null };
         }
 
-        if (byteLength(textResult.data) > maxTextBytes) {
+        const data = sanitizeText(textResult.data);
+        if (byteLength(data) > maxTextBytes) {
             logger.warn('clipboard text exceeds MAX_TEXT_BYTES; skipping sync');
             return { ok: false, data: null };
         }
 
-        return textResult;
+        return {
+            ok: true,
+            data
+        };
     }
 
     async function getClipboardImage() {
@@ -210,7 +214,7 @@ Write-Output 'OK'
 
     async function writeText(text) {
         try {
-            await clipboardy.write(text);
+            await clipboardy.write(sanitizeText(text));
             return true;
         } catch (err) {
             logger.error('writeText failed:', err.message);

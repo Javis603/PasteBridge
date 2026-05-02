@@ -10,8 +10,12 @@ function byteLength(value) {
     return Buffer.byteLength(value, 'utf8');
 }
 
+function sanitizeText(value) {
+    return typeof value === 'string' ? value.replace(/\u0000/g, '') : value;
+}
+
 function createClipboardState(type, data) {
-    return { type, hash: hash(data) };
+    return { type, hash: hash(type === 'text' ? sanitizeText(data) : data) };
 }
 
 function generateMessageId() {
@@ -82,6 +86,17 @@ function isMessageValid(message, limits) {
     return false;
 }
 
+function normalizeMessage(message) {
+    if (message.type !== 'text') {
+        return message;
+    }
+
+    return {
+        ...message,
+        data: sanitizeText(message.data)
+    };
+}
+
 function createMessage({
     senderId,
     sessionId,
@@ -99,7 +114,7 @@ function createMessage({
         sequence,
         timestamp,
         type,
-        data
+        data: type === 'text' ? sanitizeText(data) : data
     };
 }
 
@@ -143,7 +158,8 @@ function parseIncomingMessage(raw, limits, options = {}) {
             };
         }
 
-        if (!isMessageValid(message, limits)) {
+        const normalizedMessage = normalizeMessage(message);
+        if (!isMessageValid(normalizedMessage, limits)) {
             return {
                 ok: false,
                 error: 'invalid payload'
@@ -152,7 +168,7 @@ function parseIncomingMessage(raw, limits, options = {}) {
 
         return {
             ok: true,
-            message
+            message: normalizedMessage
         };
     } catch (err) {
         return {
@@ -232,6 +248,7 @@ module.exports = {
     parseBinaryEnvelope,
     parseIncomingMessage,
     preview,
+    sanitizeText,
     serializeOutgoingMessage,
     sameClipboardState
 };

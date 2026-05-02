@@ -2,7 +2,7 @@ const { execFile } = require('child_process');
 const fs = require('fs');
 const { promisify } = require('util');
 
-const { byteLength, createClipboardState } = require('../common/protocol');
+const { byteLength, createClipboardState, sanitizeText } = require('../common/protocol');
 
 const execFileAsync = promisify(execFile);
 const fsPromises = fs.promises;
@@ -35,12 +35,13 @@ function createMacClipboard(options) {
                 maxBuffer: maxTextBytes + 1024
             });
 
-            if (byteLength(stdout) > maxTextBytes) {
+            const data = sanitizeText(stdout);
+            if (byteLength(data) > maxTextBytes) {
                 logger.warn('clipboard text exceeds MAX_TEXT_BYTES; skipping sync');
                 return { ok: false, data: null };
             }
 
-            return { ok: true, data: stdout };
+            return { ok: true, data };
         } catch (err) {
             logger.error('getClipboardText failed:', err.message);
             return { ok: false, data: null };
@@ -98,12 +99,13 @@ function createMacClipboard(options) {
     }
 
     async function writeText(text) {
+        const data = sanitizeText(text);
         try {
             await runOsaScript([
                 'on run argv',
                 'set the clipboard to item 1 of argv',
                 'end run'
-            ], [text]);
+            ], [data]);
             return true;
         } catch (err) {
             logger.error('writeText failed:', err.message);

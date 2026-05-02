@@ -8,11 +8,55 @@ const {
     createMessage,
     parseIncomingMessage,
     preview,
+    sanitizeText,
     serializeOutgoingMessage,
     sameClipboardState
 } = require('../src/common/protocol');
 
 module.exports.tests = [
+    {
+        name: 'sanitizeText removes null bytes from clipboard text',
+        run() {
+            assert.strictEqual(sanitizeText('Table of Contents\u0000'), 'Table of Contents');
+            assert.strictEqual(sanitizeText('a\u0000b\u0000c'), 'abc');
+        }
+    },
+    {
+        name: 'createMessage removes null bytes from text payloads',
+        run() {
+            const message = createMessage({
+                senderId: 'client-workstation',
+                sessionId: 'session-null',
+                sequence: 1,
+                type: 'text',
+                data: 'hello\u0000',
+                timestamp: 1234567890,
+                id: 'msg-null'
+            });
+
+            assert.strictEqual(message.data, 'hello');
+        }
+    },
+    {
+        name: 'parseIncomingMessage removes null bytes from text payloads',
+        run() {
+            const result = parseIncomingMessage(JSON.stringify(createMessage({
+                senderId: 'client-workstation',
+                sessionId: 'session-null-parse',
+                sequence: 2,
+                type: 'text',
+                data: 'hello\u0000',
+                timestamp: 1234567890,
+                id: 'msg-null-parse'
+            })), {
+                maxTextBytes: 1024,
+                maxImageBytes: 2048
+            });
+
+            assert.strictEqual(result.ok, true);
+            assert.strictEqual(result.message.data, 'hello');
+        }
+    },
     {
         name: 'sameClipboardState compares type and hash',
         run() {
